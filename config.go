@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -17,7 +16,7 @@ type Block struct {
 	Sources []string `yaml:"sources"`
 }
 
-func getConfig(path string) map[string]string {
+func getConfig(path string) Config {
 	fileData, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Failed to read file: %v", err)
@@ -28,24 +27,6 @@ func getConfig(path string) map[string]string {
 	if err != nil {
 		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
-	fmt.Println(config)
 
-	out := make(map[string]string)
-	for _, block := range config.Blocks {
-		for _, source := range block.Sources {
-			out[source] = block.Target
-		}
-	}
-
-	return out
+	return config
 }
-
-//func main() {
-//	configPath := "/mnt/ImpSSD/Development/dupliphoto/test.yml"
-//	result := getConfig(configPath)
-//
-//	// Print the resulting map
-//	for key, value := range result {
-//		fmt.Printf("Source: %s, Target: %s\n", key, value)
-//	}
-//}
