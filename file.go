@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"log"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -40,7 +39,7 @@ func syncFile(sourcePath string, targetPath string) {
 }
 
 func isImage(path string) bool {
-	extension := strings.ToLower(filepath.Ext(path))
+	extension := strings.ToLower(filepath.Ext(path))[1:]
 	allExtensions := []string{"ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu",
 		"egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm",
 		"max", "miff", "mng", "msp", "nef", "nitf", "ota", "pbm", "pc1", "pc2", "pc3", "pcf", "pcx", "pdn", "pgm", "PI1",
@@ -61,13 +60,13 @@ func buildFilename(source string, allPaths []string) string {
 	usePlaceholder := false
 	createdString, err := exec.Command("stat", source, "-c", "%W").Output()
 	if err != nil {
-		log.Fatal(err)
+		createdString = nil
 	}
 	unix, err := strconv.Atoi(string(createdString))
 	if unix == 0 || err != nil {
 		modifiedString, err := exec.Command("stat", source, "-c", "%Z").Output()
 		if err != nil {
-			log.Fatal(err)
+			modifiedString = nil
 		}
 		unix, err = strconv.Atoi(string(modifiedString))
 		if err != nil {
@@ -79,7 +78,7 @@ func buildFilename(source string, allPaths []string) string {
 	if !usePlaceholder {
 		date = time.Unix(int64(unix), 0).Format(date)
 	}
-	return fmt.Sprintf("%s_%d.%s", date, getMaxCount(allPaths, date)+1, filepath.Ext(source))
+	return fmt.Sprintf("%s_%d%s", date, getMaxCount(allPaths, date)+1, filepath.Ext(source))
 }
 
 func getMaxCount(allPaths []string, date string) int {
@@ -88,8 +87,8 @@ func getMaxCount(allPaths []string, date string) int {
 		base := filepath.Base(path)
 		pathDate := base[0:10]
 		if pathDate == date {
-			pathNumber := base[12:]
-			newNum, err := strconv.Atoi(filepath.Ext(pathNumber))
+			pathNumber := base[11:]
+			newNum, err := strconv.Atoi(strings.Split(pathNumber, ".")[0])
 			if err == nil && out < newNum {
 				out = newNum
 			}
