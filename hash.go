@@ -36,3 +36,26 @@ func getHashes(paths []string) [][]string {
 	}
 	return out
 }
+
+func findPathHash(all [][]string, find string, searchPath bool) (string, string, bool) {
+	outHash := ""
+	outPath := ""
+	found := false
+	current := ""
+	for _, file := range all {
+		hash := file[1]
+		path := file[0]
+		if searchPath {
+			current = path
+		} else {
+			current = hash
+		}
+		if current == find {
+			outPath = path
+			outHash = hash
+			found = true
+			break
+		}
+	}
+	return outPath, outHash, found
+}
