@@ -28,11 +28,32 @@ func outputHashes(hashes [][]string, path string) {
 	}
 }
 
+func syncBlock(block Block) {
+	targetPaths := getPaths(block.Target)
+	targetHashes := getHashes(targetPaths)
+	for _, sourceRoot := range block.Sources {
+		sourcePaths := getPaths(sourceRoot)
+		sourceHashes := getHashes(sourcePaths)
+		for _, sourceFile := range sourceHashes {
+			sourcePath := sourceFile[0]
+			if !isImage(sourcePath) {
+				continue
+			}
+			sourceHash := sourceFile[1]
+			_, _, found := findPathHash(targetHashes, sourceHash, false)
+			if !found {
+				targetPath := buildFilename(sourcePath, targetPaths)
+				syncFile(sourcePath, targetPath)
+				targetHashes = append(targetHashes, []string{targetPath, sourceHash})
+			}
+		}
+	}
+}
+
 func main() {
-	base := "/mnt/ImpSSD/Development/dupliphoto"
-	target := base + "/imgGen/deep"
-	hashFile := base + "/targetHash"
-	allPaths := getPaths(target)
-	hashed := getHashes(allPaths)
-	outputHashes(hashed, hashFile)
+	configPath := "/mnt/ImpSSD/Development/dupliphoto/test.yml"
+	config := getConfig(configPath)
+	for _, block := range config.Blocks {
+		syncBlock(block)
+	}
 }
