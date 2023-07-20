@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/djherbis/times"
 )
@@ -92,14 +91,7 @@ func getDate(path string) standardName {
 		return out
 	}
 
-	var birthTime time.Time
-	if t.HasBirthTime() {
-		birthTime = t.BirthTime()
-	} else if t.HasChangeTime() {
-		birthTime = t.ChangeTime()
-	} else {
-		return out
-	}
+	birthTime := t.ModTime()
 
 	out.fullDate = birthTime.Format("2006_01_02")
 	out.day = birthTime.Day()
