@@ -28,8 +28,11 @@ func getPaths(path string) []string {
 	return allPaths
 }
 
-func syncFile(sourcePath string, targetPath string) {
-	fmt.Println(sourcePath, targetPath)
+func syncFile(sourcePath string, targetPath string, isDryRun bool) {
+	fmt.Printf("copy: %s -> %s\n", sourcePath, targetPath)
+	if isDryRun {
+		return
+	}
 	err := exec.Command("mkdir", "-p", filepath.Dir(targetPath)).Run()
 	if err != nil {
 		panic("Failed to create folder:" + err.Error())
@@ -40,7 +43,11 @@ func syncFile(sourcePath string, targetPath string) {
 	}
 }
 
-func renameFile(oldPath string, newPath string) {
+func renameFile(oldPath string, newPath string, isDryRun bool) {
+	fmt.Printf("rename: %s -> %s\n", oldPath, newPath)
+	if isDryRun {
+		return
+	}
 	err := os.Rename(oldPath, newPath)
 	if err != nil {
 		panic("Failed to rename file: " + err.Error())
