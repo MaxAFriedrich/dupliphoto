@@ -1,50 +1,55 @@
 package main
 
 import (
-	"encoding/csv"
-	"fmt"
-	"log"
-	"os"
+	"path/filepath"
 )
 
-func outputHashes(hashes [][]string, path string) {
-	fp, err := os.Create(path)
-	if err != nil {
-		fmt.Printf("Warning: could not open file for writing hash list %s.\n", path)
-	}
-	w := csv.NewWriter(fp)
-
-	for _, hash := range hashes {
-		if err := w.Write(hash); err != nil {
-			log.Fatalln("error writing record to csv:", err)
+func checkTargetNames(basePath string, paths []string, hashes [][]string, isDryRun bool) ([]string, [][]string) {
+	for index, path := range paths {
+		if isImage(path) {
+			filename := filepath.Base(path)
+			_, vaildName := getStandardName(filename)
+			if !vaildName {
+				newName := buildFilename(path, paths)
+				newPath := filepath.Join(basePath, newName)
+				if filepath.Dir(path) != basePath {
+					syncFile(path, newPath, isDryRun)
+				} else {
+					renameFile(path, newPath, isDryRun)
+				}
+				paths[index] = newPath
+				hashes[index][0] = newPath
+			}
 		}
 	}
-
-	// Write any buffered data to the underlying writer
-	w.Flush()
-
-	if err := w.Error(); err != nil {
-		log.Fatal(err)
-	}
+	return paths, hashes
 }
 
-func syncBlock(block Block) {
-	targetPaths := getPaths(block.Target)
-	targetHashes := getHashes(targetPaths)
-	for _, sourceRoot := range block.Sources {
-		sourcePaths := getPaths(sourceRoot)
+func inTarget(targetHashes [][]string, sourceHash string) bool {
+	for _, target := range targetHashes {
+		targetHash := target[1]
+		if targetHash == sourceHash {
+			return true
+		}
+	}
+	return false
+}
+
+func syncBlock(block Block, targetPaths []string, targetHashes [][]string, isDryRun bool) {
+	for _, sources := range block.Sources {
+		sourcePaths := getPaths(sources)
 		sourceHashes := getHashes(sourcePaths)
-		for _, sourceFile := range sourceHashes {
-			sourcePath := sourceFile[0]
-			if !isImage(sourcePath) {
-				continue
-			}
-			sourceHash := sourceFile[1]
-			_, _, found := findPathHash(targetHashes, sourceHash, false)
-			if !found {
-				targetPath := buildFilename(sourcePath, targetPaths)
-				syncFile(sourcePath, targetPath)
-				targetHashes = append(targetHashes, []string{targetPath, sourceHash})
+		for _, source := range sourceHashes {
+			sourcePath := source[0]
+			sourceHash := source[1]
+			if isImage(sourcePath) {
+				if !inTarget(targetHashes, sourceHash) {
+					newName := buildFilename(sourcePath, targetPaths)
+					newPath := filepath.Join(block.Target, newName)
+					syncFile(sourcePath, newPath, isDryRun)
+					targetHashes = append(targetHashes, []string{newPath, sourceHash})
+					targetPaths = append(targetPaths, newPath)
+				}
 			}
 		}
 	}
@@ -54,6 +59,9 @@ func main() {
 	configPath := "/mnt/ImpSSD/Development/dupliphoto/test.yml"
 	config := getConfig(configPath)
 	for _, block := range config.Blocks {
-		syncBlock(block)
+		targetPaths := getPaths(block.Target)
+		targetHashes := getHashes(targetPaths)
+		targetPaths, targetHashes = checkTargetNames(block.Target, targetPaths, targetHashes, true)
+		syncBlock(block, targetPaths, targetHashes, true)
 	}
 }
