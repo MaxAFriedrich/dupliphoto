@@ -28,8 +28,10 @@ func getPaths(path string) []string {
 	return allPaths
 }
 
-func syncFile(sourcePath string, targetPath string, isDryRun bool) {
-	fmt.Printf("copy: %s -> %s\n", sourcePath, targetPath)
+func syncFile(sourcePath string, targetPath string, isDryRun bool, verbose bool) {
+	if verbose {
+		fmt.Printf("copy: %s -> %s\n", sourcePath, targetPath)
+	}
 	if isDryRun {
 		return
 	}
@@ -43,8 +45,10 @@ func syncFile(sourcePath string, targetPath string, isDryRun bool) {
 	}
 }
 
-func renameFile(oldPath string, newPath string, isDryRun bool) {
-	fmt.Printf("rename: %s -> %s\n", oldPath, newPath)
+func renameFile(oldPath string, newPath string, isDryRun bool, verbose bool) {
+	if verbose {
+		fmt.Printf("rename: %s -> %s\n", oldPath, newPath)
+	}
 	if isDryRun {
 		return
 	}

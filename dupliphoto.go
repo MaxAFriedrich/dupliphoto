@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 )
 
-func checkTargetNames(basePath string, paths []string, hashes [][]string, isDryRun bool) ([]string, [][]string) {
+func checkTargetNames(basePath string, paths []string, hashes [][]string, isDryRun bool, verbose bool) ([]string, [][]string) {
 	for index, path := range paths {
 		if isImage(path) {
 			filename := filepath.Base(path)
@@ -13,9 +13,9 @@ func checkTargetNames(basePath string, paths []string, hashes [][]string, isDryR
 				newName := buildFilename(path, paths)
 				newPath := filepath.Join(basePath, newName)
 				if filepath.Dir(path) != basePath {
-					syncFile(path, newPath, isDryRun)
+					syncFile(path, newPath, isDryRun, verbose)
 				} else {
-					renameFile(path, newPath, isDryRun)
+					renameFile(path, newPath, isDryRun, verbose)
 				}
 				paths[index] = newPath
 				hashes[index][0] = newPath
@@ -35,7 +35,7 @@ func inTarget(targetHashes [][]string, sourceHash string) bool {
 	return false
 }
 
-func syncBlock(block Block, targetPaths []string, targetHashes [][]string, isDryRun bool) {
+func syncBlock(block Block, targetPaths []string, targetHashes [][]string, isDryRun bool, verbose bool) {
 	for _, sources := range block.Sources {
 		sourcePaths := getPaths(sources)
 		sourceHashes := getHashes(sourcePaths)
@@ -46,7 +46,7 @@ func syncBlock(block Block, targetPaths []string, targetHashes [][]string, isDry
 				if !inTarget(targetHashes, sourceHash) {
 					newName := buildFilename(sourcePath, targetPaths)
 					newPath := filepath.Join(block.Target, newName)
-					syncFile(sourcePath, newPath, isDryRun)
+					syncFile(sourcePath, newPath, isDryRun, verbose)
 					targetHashes = append(targetHashes, []string{newPath, sourceHash})
 					targetPaths = append(targetPaths, newPath)
 				}
@@ -56,12 +56,12 @@ func syncBlock(block Block, targetPaths []string, targetHashes [][]string, isDry
 }
 
 func main() {
-	configPath := "/mnt/ImpSSD/Development/dupliphoto/test.yml"
-	config := getConfig(configPath)
+	args := cli()
+	config := getConfig(args.ConfigFile)
 	for _, block := range config.Blocks {
 		targetPaths := getPaths(block.Target)
 		targetHashes := getHashes(targetPaths)
-		targetPaths, targetHashes = checkTargetNames(block.Target, targetPaths, targetHashes, true)
-		syncBlock(block, targetPaths, targetHashes, true)
+		targetPaths, targetHashes = checkTargetNames(block.Target, targetPaths, targetHashes, args.IsDryRun, args.Verbose)
+		syncBlock(block, targetPaths, targetHashes, args.IsDryRun, args.Verbose)
 	}
 }
