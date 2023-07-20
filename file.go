@@ -59,6 +59,9 @@ func renameFile(oldPath string, newPath string, isDryRun bool, verbose bool) {
 }
 
 func isImage(path string) bool {
+	if len(filepath.Ext(path)) < 1 {
+		return false
+	}
 	extension := strings.ToLower(filepath.Ext(path))[1:]
 	allExtensions := []string{"ase", "art", "bmp", "blp", "cd5", "cit", "cpt", "cr2", "cut", "dds", "dib", "djvu",
 		"egt", "exif", "gif", "gpl", "grf", "icns", "ico", "iff", "jng", "jpeg", "jpg", "jfif", "jp2", "jps", "lbm",
