@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/djherbis/times"
 )
 
 func getPaths(path string) []string {
@@ -30,11 +32,18 @@ func syncFile(sourcePath string, targetPath string) {
 	fmt.Println(sourcePath, targetPath)
 	err := exec.Command("mkdir", "-p", filepath.Dir(targetPath)).Run()
 	if err != nil {
-		panic("Failed to create folder")
+		panic("Failed to create folder:" + err.Error())
 	}
 	err = exec.Command("cp", sourcePath, targetPath).Run()
 	if err != nil {
-		panic("Failed to write file")
+		panic("Failed to write file:" + err.Error())
+	}
+}
+
+func renameFile(oldPath string, newPath string) {
+	err := os.Rename(oldPath, newPath)
+	if err != nil {
+		panic("Failed to rename file: " + err.Error())
 	}
 }
 
@@ -56,43 +65,32 @@ func isImage(path string) bool {
 	return false
 }
 
-func buildFilename(source string, allPaths []string) string {
-	usePlaceholder := false
-	createdString, err := exec.Command("stat", source, "-c", "%W").Output()
+func getDate(path string) standardName {
+	var out standardName
+	out.index = 0
+	out.day = 0
+	out.month = 0
+	out.year = 0
+	out.fullDate = "YYYY_MM_DD"
+
+	t, err := times.Stat(path)
 	if err != nil {
-		createdString = nil
-	}
-	unix, err := strconv.Atoi(string(createdString))
-	if unix == 0 || err != nil {
-		modifiedString, err := exec.Command("stat", source, "-c", "%Z").Output()
-		if err != nil {
-			modifiedString = nil
-		}
-		unix, err = strconv.Atoi(string(modifiedString))
-		if err != nil {
-			usePlaceholder = true
-		}
+		return out
 	}
 
-	date := "YYYY_DD_MM"
-	if !usePlaceholder {
-		date = time.Unix(int64(unix), 0).Format(date)
+	var birthTime time.Time
+	if t.HasBirthTime() {
+		birthTime = t.BirthTime()
+	} else if t.HasChangeTime() {
+		birthTime = t.ChangeTime()
+	} else {
+		return out
 	}
-	return fmt.Sprintf("%s_%d%s", date, getMaxCount(allPaths, date)+1, filepath.Ext(source))
-}
 
-func getMaxCount(allPaths []string, date string) int {
-	out := 0
-	for _, path := range allPaths {
-		base := filepath.Base(path)
-		pathDate := base[0:10]
-		if pathDate == date {
-			pathNumber := base[11:]
-			newNum, err := strconv.Atoi(strings.Split(pathNumber, ".")[0])
-			if err == nil && out < newNum {
-				out = newNum
-			}
-		}
-	}
+	out.fullDate = birthTime.Format("2006_01_02")
+	out.day = birthTime.Day()
+	out.month = int(birthTime.Month())
+	out.year = birthTime.Year()
+
 	return out
 }
